@@ -14,7 +14,10 @@ testDPET.o: testDPET.cpp APE.h DPT.h Time.h parameter.h
 
 APE.o: APE.cpp APE.h Time.h parameter.h preCal.h C2Festimate.h
 	$(CC) -c $(CFLAGS) APE.cpp `pkg-config --cflags opencv` $(INCS)
-  
+
+DPT.o: DPT.cpp DPT.h parameter.h track.h
+	$(CC) -c $(CFLAGS) DPT.cpp `pkg-config --cflags opencv` $(INCS)
+ 
 preCal.o: preCal.cpp preCal.h parameter.h preCal_kernel.h
 	$(CC) -c $(CFLAGS) preCal.cpp $(INCS)
 
@@ -29,9 +32,6 @@ getPoses.o: getPoses.cu getPoses.h device_common.h
 
 expandPoses.o: expandPoses.cu expandPoses.h parameter.h device_common.h
 	$(NVCC) -c expandPoses.cu
-  
-DPT.o: DPT.cu DPT.h parameter.h track.h
-	$(NVCC) -c DPT.cu
   
 track.o: track.cu track.h parameter.h device_common.h
 	$(NVCC) -c track.cu

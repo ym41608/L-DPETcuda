@@ -2,12 +2,11 @@
 #define DPT_H
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/core/cuda_devptrs.hpp>
-#include <vector_types.h>
+#include <opencv2/gpu/gpu.hpp>
 #include "parameter.h"
 
 using namespace cv;
 
-void DPT(pose *p, parameter *para, const gpu::PtrStepSz<float3> &marker_d, const Mat &img, const bool &verbose);
+void DPT(pose *p, parameter *para, const gpu::GpuMat &marker_d, const Mat &img, const bool &verbose);
 
 #endif

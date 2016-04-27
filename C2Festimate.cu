@@ -454,6 +454,7 @@ void C2Festimate(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::Ptr
   int level = 0;
   thrust::host_vector<float> bestDists;
   float originNumPoses;
+  float2 c = (para->photo)? make_float2(0.075, 0.15) : make_float2(0.05, 0.1);
   while (true) {
     level++;
     if (verbose)
@@ -494,7 +495,7 @@ void C2Festimate(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::Ptr
     bool tooHighPercentage = getPoses(&Poses4, &Poses2, &Eas, bestEa, para->delta, &numPoses);
     
     // restart?
-    if ((level==1) && ((tooHighPercentage && (bestEa > 0.05) && (originNumPoses < 7500000)) || ((bestEa > 0.10) && (originNumPoses < 5000000)) ) ) {
+    if ((level==1) && ((tooHighPercentage && (bestEa > c.x) && (originNumPoses < 7500000)) || ((bestEa > c.y) && (originNumPoses < 5000000)) ) ) {
       if (verbose)
         cout << "##### Restarting!!! change delta from " << para->delta << " to " << para->delta*0.9 << endl;
       para->shrinkNet(0.9);

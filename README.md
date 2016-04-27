@@ -7,3 +7,5 @@ ver1. initial commit
 ver1.1 fix Makefiel
   estimtation: 38 s
   tracking: 0.4 s (for SAMPLENUMT 900)
+
+ver2. 3-scale block search

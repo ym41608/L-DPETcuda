@@ -78,44 +78,51 @@ void randSampleT(thrust::device_vector<float2>* mCoor, thrust::device_vector<flo
 
 //{ --- for create pose set --- //
 __global__
-void createSet_kernelT(float4* Poses4, float2* Poses2, const float tx, const float ty, const float tz, const float rx, const float rz0, const float rz1) {
+void createSet_kernelT(float4* Poses4, float2* Poses2, const float tx, const float ty, const float tz, const float rx, const float rz0, const float rz1, 
+  const float deltaR, const float deltaT, const float tzMin, const float tzMax, const float rxMin, const float rxMax) {
   const int tIdx = threadIdx.x;
   const int Idx = blockIdx.x * BLOCK_SIZE + tIdx;
   
-  if (Idx >= 262144)
+  if (Idx >= 42875)
     return;
     
-  const int idrz1 = Idx % 8;
-  const int idrz0 = (Idx / 8) % 8;
-  const int idrx = (Idx / 64) % 8;
-  const int idtz = (Idx / 512) % 8;
-  const int idty = (Idx / 4096) % 8;
-  const int idtx = (Idx / 32768) % 8;
+  const int idrz1 = Idx % 5;
+  const int idrz0 = (Idx / 5) % 5;
+  const int idrx = (Idx / 25) % 5;
+  const int idtz = (Idx / 125) % 7;
+  const int idty = (Idx / 875) % 7;
+  const int idtx = (Idx / 6125) % 7;
   
   float4 p4;
   float2 p2;
-  //p4.x = tx - 0.012 + idtx*0.004;
-  //p4.y = ty - 0.012 + idty*0.004;
-  //p4.z = tz - 0.024 + idtz*0.008;
-  //p4.w = rx - 0.036 + idrx*0.012;
-  //p2.x = rz0 - 0.06 + idrz0*0.02;
-  //p2.y = rz1 - 0.06 + idrz1*0.02;
-  p4.x = tx - 0.006 + idtx*0.002;
-  p4.y = ty - 0.006 + idty*0.002;
-  p4.z = tz - 0.012 + idtz*0.004;
-  p4.w = rx - 0.018 + idrx*0.006;
-  p2.x = rz0 - 0.03 + idrz0*0.01;
-  p2.y = rz1 - 0.03 + idrz1*0.01;
+  p4.x = tx - deltaT*3 + idtx*deltaT;//0.004
+  p4.y = ty - deltaT*3 + idty*deltaT;
+  p4.z = tz - deltaT*6 + idtz*deltaT*2;
+  p4.w = rx - deltaR*12 + idrx*deltaR*6;
+  p2.x = rz0 - deltaR*20 + idrz0*deltaR*10;
+  p2.y = rz1 - deltaR*20 + idrz1*deltaR*10;
+  p4.z = max(tzMin, p4.z);
+  p4.z = min(tzMax, p4.z);
+  p4.w = max(rxMin, p4.w);
+  p4.w = min(rxMax, p4.w);
+  //p4.x = tx - 0.003 + idtx*0.001;
+  //p4.y = ty - 0.003 + idty*0.001;
+  //p4.z = tz - 0.006 + idtz*0.002;
+  //p4.w = rx - 0.009 + idrx*0.003;
+  //p2.x = rz0 - 0.015 + idrz0*0.005;
+  //p2.y = rz1 - 0.015 + idrz1*0.005;
   
   Poses4[Idx] = p4;
   Poses2[Idx] = p2;			
 }
 
-void createSetT(thrust::device_vector<float4> *Poses4, thrust::device_vector<float2> *Poses2, const pose &pini) {
+void createSetT(thrust::device_vector<float4> *Poses4, thrust::device_vector<float2> *Poses2, pose *pini, parameter *para, 
+  const float &deltaR, const float &deltaT) {
     // tracking pattern
-  const int BLOCK_NUM = 262143 / BLOCK_SIZE + 1;
+  const int BLOCK_NUM = 42875 / BLOCK_SIZE + 1;
   createSet_kernelT <<< BLOCK_NUM, BLOCK_SIZE >>> (thrust::raw_pointer_cast(Poses4->data()), thrust::raw_pointer_cast(Poses2->data()), 
-    pini.tx, pini.ty, pini.tz, pini.rx, pini.rz0, pini.rz1);
+    pini->tx, pini->ty, pini->tz, pini->rx, pini->rz0, pini->rz1, deltaR, deltaT, 
+    para->tzMin, para->tzMax, para->rxMin, para->rxMax);
 }
 //}
 
@@ -342,7 +349,7 @@ void calEa_P_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf
   
 void calEaT(thrust::device_vector<float4> *Poses4, thrust::device_vector<float2> *Poses2, thrust::device_vector<float> *Eas, 
     const float2 &Sf, const int2 &P, const float2 &markerDim, const int2 &iDim, const bool &photo) {
-  const int BLOCK_NUM = 262143 / BLOCK_SIZE + 1;
+  const int BLOCK_NUM = 42875 / BLOCK_SIZE + 1;
   if (photo) {
     calEa_P_kernelT << < BLOCK_NUM, BLOCK_SIZE >> > (thrust::raw_pointer_cast(Poses4->data()), thrust::raw_pointer_cast(Poses2->data()), 
       thrust::raw_pointer_cast(Eas->data()), Sf, P, markerDim, iDim);
@@ -355,7 +362,40 @@ void calEaT(thrust::device_vector<float4> *Poses4, thrust::device_vector<float2>
 //}
 
 //{ --- for Track --- //
+void blockSearch(pose *p, thrust::device_vector<float4> *Poses4, thrust::device_vector<float2> *Poses2, thrust::device_vector<float> *Eas, 
+  thrust::device_vector<float2> *mCoor, thrust::device_vector<float4> *mValue, const gpu::PtrStepSz<float3> &marker_d, 
+  parameter *para, const float& deltaR, const float &deltaT, const bool &verbose) {
+  
+  // rand point
+  randSampleT(mCoor, mValue, marker_d, make_int2(para->mDimX, para->mDimY), make_float2(para->markerDimX, para->markerDimY));
+  
+  // creat block according to initial pose
+  createSetT(Poses4, Poses2, p, para, deltaR, deltaT);
+  
+  // calEa
+  calEaT(Poses4, Poses2, Eas, make_float2(para->Sfx, para->Sfy), make_int2(para->Px, para->Py), 
+    make_float2(para->markerDimX, para->markerDimY), make_int2(para->iDimX, para->iDimY), para->photo);
+  
+  // findMin
+  thrust::device_vector<float>::iterator iter = thrust::min_element(Eas->begin(), Eas->end());
+  float bestEa = *iter;
+  if (verbose)
+    std::cout << "$$$ bestEa = " << bestEa << endl;
+  
+  // update pose
+  int idx = iter - Eas->begin();
+  float4 p4 = (*Poses4)[idx];
+  float2 p2 = (*Poses2)[idx];
+  p->tx = p4.x;
+  p->ty = p4.y;
+  p->tz = p4.z;
+  p->rx = p4.w;
+  p->rz0 = p2.x;
+  p->rz1 = p2.y; 
+ }
+
 void track(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::PtrStepSz<float4> &img_d, parameter *para, const bool &verbose) {
+  
   // bind texture memory
   tex_imgYCrCb.addressMode[0] = cudaAddressModeBorder;
   tex_imgYCrCb.addressMode[1] = cudaAddressModeBorder;
@@ -367,32 +407,26 @@ void track(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::PtrStepSz
   // allocate sample memory
   thrust::device_vector<float2> mCoor(SAMPLE_NUMT, make_float2(0, 0));
   thrust::device_vector<float4> mValue(SAMPLE_NUMT, make_float4(0, 0, 0, 0));
-  randSampleT(&mCoor, &mValue, marker_d, make_int2(para->mDimX, para->mDimY), make_float2(para->markerDimX, para->markerDimY));
 
   // initialize the net
-  thrust::device_vector<float4> Poses4(262144);
-  thrust::device_vector<float2> Poses2(262144);
-  thrust::device_vector<float> Eas(262144);
-  createSetT(&Poses4, &Poses2, *p);
+  thrust::device_vector<float4> Poses4(42875);
+  thrust::device_vector<float2> Poses2(42875);
+  thrust::device_vector<float> Eas(42875);
   
-  // calEa
-  calEaT(&Poses4, &Poses2, &Eas, make_float2(para->Sfx, para->Sfy), make_int2(para->Px, para->Py), 
-    make_float2(para->markerDimX, para->markerDimY), make_int2(para->iDimX, para->iDimY), para->photo);
-    
-  // findMin
-  thrust::device_vector<float>::iterator iter = thrust::min_element(Eas.begin(), Eas.end());
-  float bestEa = *iter;
-  if (verbose)
-    std::cout << "$$$ bestEa = " << bestEa << endl;
-  const int idx = iter - Eas.begin();
-  float4 p4 = Poses4[idx];
-  float2 p2 = Poses2[idx];
-  p->tx = p4.x;
-  p->ty = p4.y;
-  p->tz = p4.z;
-  p->rx = p4.w;
-  p->rz0 = p2.x;
-  p->rz1 = p2.y;
+  // 1 round
+  float deltaR = 0.004;
+  float deltaT = 0.004;
+  blockSearch(p, &Poses4, &Poses2, &Eas, &mCoor, &mValue, marker_d, para, deltaR, deltaT, verbose);
+  
+  // 2 round
+  deltaR /= 2.0;
+  deltaT /= 3.0;
+  blockSearch(p, &Poses4, &Poses2, &Eas, &mCoor, &mValue, marker_d, para, deltaR, deltaT, verbose);
+
+  // 3 round
+  deltaR /= 2.0;
+  deltaT /= 3.0;
+  blockSearch(p, &Poses4, &Poses2, &Eas, &mCoor, &mValue, marker_d, para, deltaR, deltaT, verbose);
   
   // unbind the texture
   cudaUnbindTexture (&tex_imgYCrCb);

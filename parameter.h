@@ -9,6 +9,32 @@ struct pose {
 // class parameter
 class parameter {
   public:
+    parameter() {
+      Prev.tx = 0;
+      Prev.ty = 0;
+      Prev.tz = 0;
+      Prev.rx = 0;
+      Prev.rz0 = 0;
+      Prev.rz1 = 0;
+      V0.tx = 0;
+      V0.ty = 0;
+      V0.tz = 0;
+      V0.rx = 0;
+      V0.rz0 = 0;
+      V0.rz1 = 0;
+      V1.tx = 0;
+      V1.ty = 0;
+      V1.tz = 0;
+      V1.rx = 0;
+      V1.rz0 = 0;
+      V1.rz1 = 0;
+      A.tx = 0;
+      A.ty = 0;
+      A.tz = 0;
+      A.rx = 0;
+      A.rz0 = 0;
+      A.rz1 = 0;
+    };
     void shrinkNet(const float& factor) {
       txS *= factor;
       tyS *= factor;
@@ -42,8 +68,7 @@ class parameter {
     bool photo;
     
     // about tracking
-    float txV, tyV, tzV, rxV, rz0V, rz1V;
-    float txA, tyZ, tzA, rxA, rz0A, rz1A;
+    pose Prev, V0, V1, A;
 };
 
 #endif
