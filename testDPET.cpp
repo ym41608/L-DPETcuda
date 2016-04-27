@@ -1,15 +1,15 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/gpu/gpu.hpp>
 #include <iostream>
-#include "time.h"
+#include "Time.h"
 #include "parameter.h"
 #include "APE.h"
 #include "DPT.h"
 
-#define SFX 1001.716756 / 4
-#define SFY 1002.501215 / 4
-#define PX 160
-#define PY 90
+#define SFX 1001.716756 / 2
+#define SFY 1002.501215 / 2
+#define PX 320
+#define PY 180
 
 using namespace std;
 using namespace cv;
@@ -78,12 +78,12 @@ void getExMat(float *ex_mat, const pose &P) {
 }
 
 int main() {
-  Mat marker = cv::imread("img/ichiro_400.png");
+  Mat marker = cv::imread("img/ichiro_360.png");
   if(!marker.data ) {
     cout <<  "Could not open marker" << endl ;
     return -1;
   }
-  VideoCapture imgV("video/ichiro1_320.avi");
+  VideoCapture imgV("video/ichiro1.avi");
   if (!imgV.isOpened()) {
     cout <<  "Could not open video" << endl ;
     return -1;
@@ -123,8 +123,8 @@ int main() {
     DPT(&p, &para, marker_d, img, false);
     getExMat(ex_mat, p);
     drawCoordinate(imgO, ex_mat, SFX, SFY, PX, PY, para, img);
-    outputVideo.write(imgO);
     time.Pause();
+    outputVideo.write(imgO);
     totolTime += time.get_count();
     cout << count << endl;
     //if (count == 210)

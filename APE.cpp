@@ -6,7 +6,7 @@
 #include "parameter.h"
 #include "C2Festimate.h"
 #include "preCal.h"
-#include "time.h"
+#include "Time.h"
 
 using namespace cv;
 using namespace std;
