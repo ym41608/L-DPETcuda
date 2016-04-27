@@ -4,7 +4,13 @@ CFLAGS=-std=c++11 -O3
 INCS=-I/usr/local/cuda/include
 LIBS=-L/usr/local/cuda/lib -lcudart
 
-all: testDPET
+all: DPET
+
+DPET: main.o APE.o preCal.o preCal_kernel.o C2Festimate.o getPoses.o expandPoses.o DPT.o track.o
+	$(CC) -o testDPET testDPET.o APE.o preCal.o preCal_kernel.o C2Festimate.o getPoses.o expandPoses.o DPT.o track.o `pkg-config --libs opencv` $(LIBS)
+
+main.o: main.cpp APE.h DPT.h Time.h parameter.h
+  $(CC) -c $(CFLAGS) testDPET.cpp `pkg-config --cflags opencv` $(INCS)
 
 testDPET: testDPET.o APE.o preCal.o preCal_kernel.o C2Festimate.o getPoses.o expandPoses.o DPT.o track.o
 	$(CC) -o testDPET testDPET.o APE.o preCal.o preCal_kernel.o C2Festimate.o getPoses.o expandPoses.o DPT.o track.o `pkg-config --libs opencv` $(LIBS)
