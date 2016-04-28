@@ -10,10 +10,13 @@
 using namespace std;
 using namespace cv;
 
-void drawCoordinate(Mat & imgO, float *ex_mat, const float &Sfx, const float &Sfy, const float &Px, const float &Py, const parameter &para, const Mat &img) {
+void drawCoordinate(Mat &img, float *ex_mat, float Sfx, float Sfy, float Px, float Py, const parameter &para) {
   float minDim = (para.markerDimX > para.markerDimY) ? para.markerDimY : para.markerDimX;
-  imgO = img;
-  
+  float factor = img.cols / float(para.iDimX);
+  Sfx *= factor;
+  Sfy *= factor;
+  Px *= factor;
+  Py *= factor;
   float trans[16];
   trans[0] = Sfx*ex_mat[0] + Px*ex_mat[8];
 	 trans[1] = Sfx*ex_mat[1] + Px*ex_mat[9];
@@ -50,9 +53,9 @@ void drawCoordinate(Mat & imgO, float *ex_mat, const float &Sfx, const float &Sf
   z.y = (trans[4]*0.0 + trans[5]*0.0 + trans[6]*minDim + trans[7]) / 
         (trans[8]*0.0 + trans[9]*0.0 + trans[10]*minDim + trans[11]);
   
-  line(imgO, o, x, Scalar(255, 0, 0), 2, CV_AA);
-  line(imgO, o, y, Scalar(0, 255, 0), 2, CV_AA);
-  line(imgO, o, z, Scalar(0, 0, 255), 2, CV_AA);
+  line(img, o, x, Scalar(255, 0, 0), 2, CV_AA);
+  line(img, o, y, Scalar(0, 255, 0), 2, CV_AA);
+  line(img, o, z, Scalar(0, 0, 255), 2, CV_AA);
 }
 
 void getExMat(float *ex_mat, const pose &P) {
@@ -108,7 +111,7 @@ int main(int argc, char *argv[]) {
   
   pose p;
   parameter para;
-  Mat img, imgO;
+  Mat img, imgI;
   gpu::GpuMat marker_d;
   Timer time;
   int frameNum = 0;
@@ -116,43 +119,44 @@ int main(int argc, char *argv[]) {
   namedWindow("DPET");
   
   // start!
+  cout << "press e to start estimation, s to stop" << endl;
   while (frameNum > -1) {
     time.Reset(); time.Start();
-    if(!cap.read(img)) {
-      cout << "no frame captured" << endl;
-      break;
-    }
-    resize(img, img, Size(320, 180));
- 
+    cap.read(img);
+    resize(img, img, Size(640, 360));
+    resize(img, imgI, Size(320, 180));
+    
     // processing
-    if (frameNum == 0)
-      cout << "press any button" << endl;
-    else if (frameNum == 1) {
+    if (frameNum == 1) {
       cout << "estimating pose..." << endl;
-      APE(&p, &para, marker, img, marker_d, Sfx, Sfy, Px, Py, minDim, minTz, maxTz, 0.25, photo, true);
+      APE(&p, &para, marker, imgI, marker_d, Sfx, Sfy, Px, Py, minDim, minTz, maxTz, 0.25, photo, true);
       frameNum++;
     }
-    else {
+    else if (frameNum > 1){
       if (frameNum == 2)
         cout << "tracking pose!" << endl;
-      DPT(&p, &para, marker_d, img, false);
+      DPT(&p, &para, marker_d, imgI, false);
       frameNum++;
     }
     
     // output to screen
     if (frameNum >= 1) {
       getExMat(ex_mat, p);
-      drawCoordinate(imgO, ex_mat, Sfx, Sfy, Px, Py, para, img);
+      drawCoordinate(img, ex_mat, Sfx, Sfy, Px, Py, para);
     }
-    else
-      imgO = img;
     
     // calculate FPS
     time.Pause();
+    char s[300];
     float FPS = 1000000 / float(time.get_count());
-    imshow("DPET", imgO);
+    sprintf(s, "Frame rate = %f", FPS);
+    putText(img, s, Point(75, 75), FONT_HERSHEY_COMPLEX, 1, Scalar(255,0,0));
     if (frameNum == 2)
-      imwrite("tmp.png", imgO);
+      imwrite("tmp.png", img);    
+
+    // output img
+    imshow("DPET", img);
+    
     // waitKey
     char key = (char)waitKey(1);
     switch (key) {
@@ -162,7 +166,7 @@ int main(int argc, char *argv[]) {
       case 's':
         frameNum = -1;
         break;
-    }
+    }  
   }
   cout << "eunji get num. 1" << endl;
   delete[] ex_mat;
