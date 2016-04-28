@@ -109,7 +109,7 @@ int main() {
   
   // initialize
   imgV.read(img);
-  APE(&p, &para, marker, img, marker_d, SFX, SFY, PX, PY, 0.25 * (3300/12350.0), 0.3, 1, 0.25, false, true);
+  APE(&p, &para, marker, img, marker_d, SFX, SFY, PX, PY, 0.25*3300/12350.0, 0.3, 1, 0.25, false, true);
   getExMat(ex_mat, p);
   drawCoordinate(imgO, ex_mat, SFX, SFY, PX, PY, para, img);
   imwrite("result/result.png", imgO);

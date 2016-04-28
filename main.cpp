@@ -118,20 +118,23 @@ int main(int argc, char *argv[]) {
   // start!
   while (frameNum > -1) {
     time.Reset(); time.Start();
-    cap.read(img);
+    if(!cap.read(img)) {
+      cout << "no frame captured" << endl;
+      break;
+    }
     resize(img, img, Size(320, 180));
-    
+ 
     // processing
     if (frameNum == 0)
-      cout << press any button << endl;
-    if (frameNum == 1) {
-      cout << estimating pose... << endl;
+      cout << "press any button" << endl;
+    else if (frameNum == 1) {
+      cout << "estimating pose..." << endl;
       APE(&p, &para, marker, img, marker_d, Sfx, Sfy, Px, Py, minDim, minTz, maxTz, 0.25, photo, true);
       frameNum++;
     }
     else {
       if (frameNum == 2)
-        cout << tracking pose! << endl;
+        cout << "tracking pose!" << endl;
       DPT(&p, &para, marker_d, img, false);
       frameNum++;
     }
@@ -139,28 +142,29 @@ int main(int argc, char *argv[]) {
     // output to screen
     if (frameNum >= 1) {
       getExMat(ex_mat, p);
-      drawCoordinate(imgO, ex_mat, SFX, SFY, PX, PY, para, img);
+      drawCoordinate(imgO, ex_mat, Sfx, Sfy, Px, Py, para, img);
     }
     else
       imgO = img;
-      
+    
     // calculate FPS
     time.Pause();
-    float FPS = 1000000 / float(time.getCount());
+    float FPS = 1000000 / float(time.get_count());
     imshow("DPET", imgO);
-    
+    if (frameNum == 2)
+      imwrite("tmp.png", imgO);
     // waitKey
     char key = (char)waitKey(1);
     switch (key) {
-      case 'e' {
+      case 'e':
         frameNum = 1;
-      }
-      case 's'
+        break;
+      case 's':
         frameNum = -1;
+        break;
     }
-    
-    cout << eunji get num. 1 << endl;
-    delete[] ex_mat;
-    return 0;
   }
+  cout << "eunji get num. 1" << endl;
+  delete[] ex_mat;
+  return 0;
 }
