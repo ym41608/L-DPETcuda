@@ -73,8 +73,8 @@ void preCal(parameter *para, gpu::GpuMat &marker_d, gpu::GpuMat &img_d, const Ma
   para->tyS = delta*invtmp*2*(minDim);
   para->tzS = delta*invtmp;
   para->rxS = delta*invtmp;
-  para->rz0S = delta*sqrt2/m_tz;
-  para->rz1S = delta*sqrt2/m_tz;
+  para->rz0S = delta*sqrt2;
+  para->rz1S = delta*sqrt2;
   
   // allocate memory to GPU
   gpu::GpuMat marker0(marker);

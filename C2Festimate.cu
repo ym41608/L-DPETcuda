@@ -81,7 +81,7 @@ void randSample(thrust::device_vector<float2>* mCoor, thrust::device_vector<floa
 //{ --- for create pose set --- //
 __global__
 void createSet_kernel(float4* Poses4, float2* Poses2, const int start, const int4 num, const int numPose, const float tz, const float rx, 
-                      const float rzMin, const float tx_w, const float ty_w, const float4 s4, const float2 s2, const float length, const float tz_mid) {
+                      const float rzMin, const float tx_w, const float ty_w, const float4 s4, const float2 s2, const float length) {
   const int tIdx = threadIdx.x;
   const int Idx = blockIdx.x * BLOCK_SIZE + tIdx;
   
@@ -104,8 +104,8 @@ void createSet_kernel(float4* Poses4, float2* Poses2, const int start, const int
   p4.y = -ty_w + idty*s4.y*(tz + length*sinf(rx));
   p4.z = tz;
   p4.w = -rx;
-  p2.x = rzMin + idrz0*s2.x*tz_mid;
-  p2.y = rzMin + idrz1*s2.y*tz_mid;
+  p2.x = rzMin + idrz0*s2.x;
+  p2.y = rzMin + idrz1*s2.y;
   
   Poses4[Idx + start] = p4;
   Poses2[Idx + start] = p2;			
@@ -119,9 +119,8 @@ void createSet(thrust::device_vector<float4> *Poses4, thrust::device_vector<floa
    
   // paramters
   const float length = sqrt(para.markerDimX*para.markerDimX + para.markerDimY*para.markerDimY);
-  const float tz_mid = sqrt(para.tzMin*para.tzMax);
-  const int numRz0 = int((para.rzMax - para.rzMin) / (para.rz0S*tz_mid)) + 1;
-  const int numRz1 = int((para.rzMax - para.rzMin) / (para.rz1S*tz_mid)) + 1;
+  const int numRz0 = int((para.rzMax - para.rzMin) / para.rz0S) + 1;
+  const int numRz1 = int((para.rzMax - para.rzMin) / para.rz1S) + 1;
   
   // counting
   for (float tz = para.tzMin; tz <= para.tzMax; ) {
@@ -159,7 +158,7 @@ void createSet(thrust::device_vector<float4> *Poses4, thrust::device_vector<floa
       int numPose = (*it).x * (*it).y * (*it).z * (*it).w;
       int BLOCK_NUM = (numPose - 1)/BLOCK_SIZE + 1;
       createSet_kernel <<< BLOCK_NUM, BLOCK_SIZE >>> (Poses4ptr, Poses2ptr, start, *it, numPose, tz, rx, para.rzMin, tx_w, ty_w, 
-        make_float4(para.txS, para.tyS, para.tzS, para.rxS), make_float2(para.rz0S, para.rz1S), length, tz_mid);
+        make_float4(para.txS, para.tyS, para.tzS, para.rxS), make_float2(para.rz0S, para.rz1S), length);
       start += numPose;
       it++;
             

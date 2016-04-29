@@ -85,9 +85,8 @@ void add_kernel(float4* Poses4, float2* Poses2, int4* rand4, int2* rand2, bool* 
   Poses4[Idx + numPoses].w = Orx + isPlus * isPlus * (asinf(sinrx) - Orx);
   
   // rz0 rz1
-  weight = sqrtf(btz.x * btz.y);
-  Poses2[Idx + numPoses].x = Orz0 + float(rand2[Idx].x)*s2.x*weight;
-  Poses2[Idx + numPoses].y = Orz1 + float(rand2[Idx].y)*s2.y*weight;
+  Poses2[Idx + numPoses].x = Orz0 + float(rand2[Idx].x)*s2.x;
+  Poses2[Idx + numPoses].y = Orz1 + float(rand2[Idx].y)*s2.y;
   
   // condition
   isValid[Idx + numPoses] = (vtz != 0) & (abs(sinrx) <= 1) & (Poses4[Idx + numPoses].z >= btz.x) & (Poses4[Idx + numPoses].z <= btz.y) & (Poses4[Idx + numPoses].w >= brx.x) & (Poses4[Idx + numPoses].w <= brx.y);

@@ -13,3 +13,5 @@ ver2.1 for be test case
 
 ver3. Demo system
   FPS6~7
+ver3,1
+  fix redundant calculation for step rz0 rz1 * tz_mid
