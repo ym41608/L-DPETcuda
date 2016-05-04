@@ -101,10 +101,10 @@ void createSet_kernelT(float4* Poses4, float2* Poses2, const float tx, const flo
   p4.w = rx - deltaR*12 + idrx*deltaR*6;
   p2.x = rz0 - deltaR*20 + idrz0*deltaR*10;
   p2.y = rz1 - deltaR*20 + idrz1*deltaR*10;
-  p4.z = max(tzMin, p4.z);
-  p4.z = min(tzMax, p4.z);
-  p4.w = max(rxMin, p4.w);
-  p4.w = min(rxMax, p4.w);
+  p4.z = fmaxf(tzMin, p4.z);
+  p4.z = fminf(tzMax, p4.z);
+  p4.w = fmaxf(rxMin, p4.w);
+  p4.w = fminf(rxMax, p4.w);
   //p4.x = tx - 0.003 + idtx*0.001;
   //p4.y = ty - 0.003 + idty*0.001;
   //p4.z = tz - 0.006 + idtz*0.002;
@@ -132,7 +132,7 @@ void calEa_NP_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 S
   const int tIdx = threadIdx.x;
   const int Idx = blockIdx.x * BLOCK_SIZE + tIdx;
 
-  if (Idx >= 262144)
+  if (Idx >= 42875)
     return;
 
   // calculate transformation
@@ -165,8 +165,8 @@ void calEa_NP_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 S
   t0 = Sf.x*r11 + P.x*r31;
   t1 = Sf.x*r12 + P.x*r32;
   t3 = Sf.x*tx + P.x*tz;
-  t4 = (-Sf.y)*r21 + (P.y - 1)*r31;
-  t5 = (-Sf.y)*r22 + (P.y - 1)*r32;
+  t4 = (-Sf.y)*r21 + P.y*r31;
+  t5 = (-Sf.y)*r22 + P.y*r32;
   t7 = (-Sf.y)*ty + (P.y - 1)*tz;
   t8 = r31;
   t9 = r32;
@@ -185,10 +185,10 @@ void calEa_NP_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 S
   float invc4z = 1 / (t8*(-normDim.x) + t9*(+normDim.y) + t11);
   float c4x = (t0*(-normDim.x) + t1*(+normDim.y) + t3) * invc4z;
   float c4y = (t4*(-normDim.x) + t5*(+normDim.y) + t7) * invc4z;
-  float minx = min(c1x, min(c2x, min(c3x, c4x)));
-  float maxx = max(c1x, max(c2x, max(c3x, c4x)));
-  float miny = min(c1y, min(c2y, min(c3y, c4y)));
-  float maxy = max(c1y, max(c2y, max(c3y, c4y)));
+  float minx = fminf(c1x, fminf(c2x, fminf(c3x, c4x)));
+  float maxx = fmaxf(c1x, fmaxf(c2x, fmaxf(c3x, c4x)));
+  float miny = fminf(c1y, fminf(c2y, fminf(c3y, c4y)));
+  float maxy = fmaxf(c1y, fmaxf(c2y, fmaxf(c3y, c4y)));
   if ((minx < 0) | (maxx >= imgDim.x) | (miny < 0) | (maxy >= imgDim.y)) {
     Eas[Idx] = 100.0;
     return;
@@ -223,7 +223,7 @@ void calEa_P_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf
   const int tIdx = threadIdx.x;
   const int Idx = blockIdx.x * BLOCK_SIZE + tIdx;
 
-  if (Idx >= 262144)
+  if (Idx >= 42875)
     return;
 
   // calculate transformation
@@ -256,9 +256,9 @@ void calEa_P_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf
   t0 = Sf.x*r11 + P.x*r31;
   t1 = Sf.x*r12 + P.x*r32;
   t3 = Sf.x*tx + P.x*tz;
-  t4 = (-Sf.y)*r21 + (P.y - 1)*r31;
-  t5 = (-Sf.y)*r22 + (P.y - 1)*r32;
-  t7 = (-Sf.y)*ty + (P.y - 1)*tz;
+  t4 = (-Sf.y)*r21 + P.y*r31;
+  t5 = (-Sf.y)*r22 + P.y*r32;
+  t7 = (-Sf.y)*ty + P.y*tz;
   t8 = r31;
   t9 = r32;
   t11 = tz;
@@ -276,10 +276,10 @@ void calEa_P_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf
   float invc4z = 1 / (t8*(-normDim.x) + t9*(+normDim.y) + t11);
   float c4x = (t0*(-normDim.x) + t1*(+normDim.y) + t3) * invc4z;
   float c4y = (t4*(-normDim.x) + t5*(+normDim.y) + t7) * invc4z;
-  float minx = min(c1x, min(c2x, min(c3x, c4x)));
-  float maxx = max(c1x, max(c2x, max(c3x, c4x)));
-  float miny = min(c1y, min(c2y, min(c3y, c4y)));
-  float maxy = max(c1y, max(c2y, max(c3y, c4y)));
+  float minx = fminf(c1x, fminf(c2x, fminf(c3x, c4x)));
+  float maxx = fmaxf(c1x, fmaxf(c2x, fmaxf(c3x, c4x)));
+  float miny = fminf(c1y, fminf(c2y, fminf(c3y, c4y)));
+  float maxy = fmaxf(c1y, fmaxf(c2y, fmaxf(c3y, c4y)));
   if ((minx < 0) | (maxx >= imgDim.x) | (miny < 0) | (maxy >= imgDim.y)) {
     Eas[Idx] = 100.0;
     return;
@@ -296,6 +296,7 @@ void calEa_P_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf
   float sumXiSqrd = 0; float sumYiSqrd = 0;
   float Xi, Yi;
   //float4 tmpp[SAMPLE_NUMT];
+  float invSAMPLE_NUMT = 1 / float(SAMPLE_NUMT);
   for (int i = 0; i < SAMPLE_NUMT; i++) {
     // calculate coordinate on camera image
     invz = 1 / (t8*const_Mcoor[i].x + t9*const_Mcoor[i].y + t11);
@@ -319,10 +320,10 @@ void calEa_P_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf
   }
 
   // normalization parameter
-  float sigX = sqrt((sumXiSqrd - (sumXi*sumXi) / SAMPLE_NUMT) / SAMPLE_NUMT) + 0.0000001;
-  float sigY = sqrt((sumYiSqrd - (sumYi*sumYi) / SAMPLE_NUMT) / SAMPLE_NUMT) + 0.0000001;
-  float meanX = sumXi / SAMPLE_NUMT;
-  float meanY = sumYi / SAMPLE_NUMT;
+  float sigX = sqrt((sumXiSqrd - (sumXi*sumXi) * invSAMPLE_NUMT) * invSAMPLE_NUMT) + 0.0000001;
+  float sigY = sqrt((sumYiSqrd - (sumYi*sumYi) * invSAMPLE_NUMT) * invSAMPLE_NUMT) + 0.0000001;
+  float meanX = sumXi * invSAMPLE_NUMT;
+  float meanY = sumYi * invSAMPLE_NUMT;
   float sigXoversigY = sigX / sigY;
   float faster = -meanX + sigXoversigY*meanY;
 
@@ -344,7 +345,7 @@ void calEa_P_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf
     YCrCb_tex = tex2D(tex_imgYCrCb, u, v);
     score += (2.852*abs(YCrCb_const.x - sigXoversigY*YCrCb_tex.x + faster) + abs(YCrCb_tex.y - YCrCb_const.y) + 1.264*abs(YCrCb_tex.z - YCrCb_const.z));
   }
-  Eas[Idx] = score / (SAMPLE_NUMT * 5.116);
+  Eas[Idx] = score * invSAMPLE_NUMT / 5.116;
 }
   
 void calEaT(thrust::device_vector<float4> *Poses4, thrust::device_vector<float2> *Poses2, thrust::device_vector<float> *Eas, 
@@ -375,7 +376,8 @@ void blockSearch(pose *p, thrust::device_vector<float4> *Poses4, thrust::device_
   // calEa
   calEaT(Poses4, Poses2, Eas, make_float2(para->Sfx, para->Sfy), make_int2(para->Px, para->Py), 
     make_float2(para->markerDimX, para->markerDimY), make_int2(para->iDimX, para->iDimY), para->photo);
-  
+  cudaDeviceSynchronize();  
+
   // findMin
   thrust::device_vector<float>::iterator iter = thrust::min_element(Eas->begin(), Eas->end());
   float bestEa = *iter;

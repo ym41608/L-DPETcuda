@@ -216,9 +216,9 @@ const int numPoses) {
   t0 = Sf.x*r11 + P.x*r31;
   t1 = Sf.x*r12 + P.x*r32;
   t3 = Sf.x*tx + P.x*tz;
-  t4 = (-Sf.y)*r21 + (P.y - 1)*r31;
-  t5 = (-Sf.y)*r22 + (P.y - 1)*r32;
-  t7 = (-Sf.y)*ty + (P.y - 1)*tz;
+  t4 = (-Sf.y)*r21 + P.y*r31;
+  t5 = (-Sf.y)*r22 + P.y*r32;
+  t7 = (-Sf.y)*ty + P.y*tz;
   t8 = r31;
   t9 = r32;
   t11 = tz;
@@ -236,10 +236,10 @@ const int numPoses) {
   float invc4z = 1 / (t8*(-normDim.x) + t9*(+normDim.y) + t11);
   float c4x = (t0*(-normDim.x) + t1*(+normDim.y) + t3) * invc4z;
   float c4y = (t4*(-normDim.x) + t5*(+normDim.y) + t7) * invc4z;
-  float minx = min(c1x, min(c2x, min(c3x, c4x)));
-  float maxx = max(c1x, max(c2x, max(c3x, c4x)));
-  float miny = min(c1y, min(c2y, min(c3y, c4y)));
-  float maxy = max(c1y, max(c2y, max(c3y, c4y)));
+  float minx = fminf(c1x, fminf(c2x, fminf(c3x, c4x)));
+  float maxx = fmaxf(c1x, fmaxf(c2x, fmaxf(c3x, c4x)));
+  float miny = fminf(c1y, fminf(c2y, fminf(c3y, c4y)));
+  float maxy = fmaxf(c1y, fmaxf(c2y, fmaxf(c3y, c4y)));
   if ((minx < 0) | (maxx >= imgDim.x) | (miny < 0) | (maxy >= imgDim.y)) {
     Eas[Idx] = 100.0;
     return;
@@ -308,9 +308,9 @@ const int numPoses) {
   t0 = Sf.x*r11 + P.x*r31;
   t1 = Sf.x*r12 + P.x*r32;
   t3 = Sf.x*tx + P.x*tz;
-  t4 = (-Sf.y)*r21 + (P.y - 1)*r31;
-  t5 = (-Sf.y)*r22 + (P.y - 1)*r32;
-  t7 = (-Sf.y)*ty + (P.y - 1)*tz;
+  t4 = (-Sf.y)*r21 + P.y*r31;
+  t5 = (-Sf.y)*r22 + P.y*r32;
+  t7 = (-Sf.y)*ty + P.y*tz;
   t8 = r31;
   t9 = r32;
   t11 = tz;
@@ -328,10 +328,10 @@ const int numPoses) {
   float invc4z = 1 / (t8*(-normDim.x) + t9*(+normDim.y) + t11);
   float c4x = (t0*(-normDim.x) + t1*(+normDim.y) + t3) * invc4z;
   float c4y = (t4*(-normDim.x) + t5*(+normDim.y) + t7) * invc4z;
-  float minx = min(c1x, min(c2x, min(c3x, c4x)));
-  float maxx = max(c1x, max(c2x, max(c3x, c4x)));
-  float miny = min(c1y, min(c2y, min(c3y, c4y)));
-  float maxy = max(c1y, max(c2y, max(c3y, c4y)));
+  float minx = fminf(c1x, fminf(c2x, fminf(c3x, c4x)));
+  float maxx = fmaxf(c1x, fmaxf(c2x, fmaxf(c3x, c4x)));
+  float miny = fminf(c1y, fminf(c2y, fminf(c3y, c4y)));
+  float maxy = fmaxf(c1y, fmaxf(c2y, fmaxf(c3y, c4y)));
   if ((minx < 0) | (maxx >= imgDim.x) | (miny < 0) | (maxy >= imgDim.y)) {
     Eas[Idx] = 100.0;
     return;
@@ -347,6 +347,7 @@ const int numPoses) {
   float sumXi = 0; float sumYi = 0;
   float sumXiSqrd = 0; float sumYiSqrd = 0;
   float Xi, Yi;
+  float invSAMPLE_NUM = 1 / float(SAMPLE_NUM);
   //float4 tmpp[SAMPLE_NUM];
   for (int i = 0; i < SAMPLE_NUM; i++) {
     // calculate coordinate on camera image
@@ -371,10 +372,10 @@ const int numPoses) {
   }
 
   // normalization parameter
-  float sigX = sqrt((sumXiSqrd - (sumXi*sumXi) / SAMPLE_NUM) / SAMPLE_NUM) + 0.0000001;
-  float sigY = sqrt((sumYiSqrd - (sumYi*sumYi) / SAMPLE_NUM) / SAMPLE_NUM) + 0.0000001;
-  float meanX = sumXi / SAMPLE_NUM;
-  float meanY = sumYi / SAMPLE_NUM;
+  float sigX = sqrt((sumXiSqrd - (sumXi*sumXi) * invSAMPLE_NUM) * invSAMPLE_NUM) + 0.0000001;
+  float sigY = sqrt((sumYiSqrd - (sumYi*sumYi) * invSAMPLE_NUM) * invSAMPLE_NUM) + 0.0000001;
+  float meanX = sumXi * invSAMPLE_NUM;
+  float meanY = sumYi * invSAMPLE_NUM;
   float sigXoversigY = sigX / sigY;
   float faster = -meanX + sigXoversigY*meanY;
 
@@ -397,7 +398,7 @@ const int numPoses) {
     YCrCb_tex = tex2D(tex_imgYCrCb, u, v);
     score += (2.852*abs(YCrCb_const.x - sigXoversigY*YCrCb_tex.x + faster) + abs(YCrCb_tex.y - YCrCb_const.y) + 1.264*abs(YCrCb_tex.z - YCrCb_const.z));
   }
-  Eas[Idx] = score / (SAMPLE_NUM * 5.116);
+  Eas[Idx] = score * invSAMPLE_NUM / 5.116;
 }
   
 void calEa(thrust::device_vector<float4> *Poses4, thrust::device_vector<float2> *Poses2, thrust::device_vector<float> *Eas, 
@@ -466,7 +467,8 @@ void C2Festimate(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::Ptr
     originNumPoses = numPoses;
     calEa(&Poses4, &Poses2, &Eas, make_float2(para->Sfx, para->Sfy), make_int2(para->Px, para->Py), 
           make_float2(para->markerDimX, para->markerDimY), make_int2(para->iDimX, para->iDimY), para->photo, numPoses);
-    
+    cudaDeviceSynchronize();    
+
     // findMin
     thrust::device_vector<float>::iterator iter = thrust::min_element(Eas.begin(), Eas.end());
     float bestEa = *iter;
