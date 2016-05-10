@@ -22,3 +22,7 @@ ver4 160504
   fix Px, Py
   add cudaDeviceSyn to C2F and Track
   tracking: 0.09 s (for SAMPLENUMT 512)
+
+ver5 160510
+  make file for tx1
+  FPS 9~10 for tx1

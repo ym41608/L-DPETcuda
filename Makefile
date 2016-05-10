@@ -1,6 +1,7 @@
 CC=g++
 NVCC=nvcc
 CFLAGS=-std=c++11 -O3
+NVCCFLAGS=-O3 -arch=sm_53
 INCS=-I/usr/local/cuda/include
 LIBS=-L/usr/local/cuda/lib -lcudart
 
@@ -28,19 +29,19 @@ preCal.o: preCal.cpp preCal.h parameter.h preCal_kernel.h
 	$(CC) -c $(CFLAGS) preCal.cpp $(INCS)
 
 preCal_kernel.o: preCal_kernel.cu preCal_kernel.h device_common.h
-	$(NVCC) -c -O3 preCal_kernel.cu
+	$(NVCC) -c $(NVCCFLAGS) preCal_kernel.cu
 
 C2Festimate.o: C2Festimate.cu C2Festimate.h parameter.h device_common.h getPoses.h expandPoses.h
-	$(NVCC) -c -O3 C2Festimate.cu
+	$(NVCC) -c $(NVCCFLAGS) C2Festimate.cu
 
 getPoses.o: getPoses.cu getPoses.h device_common.h
-	$(NVCC) -c -O3 getPoses.cu
+	$(NVCC) -c $(NVCCFLAGS) getPoses.cu
 
 expandPoses.o: expandPoses.cu expandPoses.h parameter.h device_common.h
-	$(NVCC) -c -O3 expandPoses.cu
+	$(NVCC) -c $(NVCCFLAGS) expandPoses.cu
   
 track.o: track.cu track.h parameter.h device_common.h
-	$(NVCC) -c -O3 track.cu
+	$(NVCC) -c $(NVCCFLAGS) track.cu
 
 clean: 
 	rm -rf *.o DPET testDPET
