@@ -95,7 +95,7 @@ void createSet_kernelT(float4* Poses4, float2* Poses2, const float tx, const flo
   
   float4 p4;
   float2 p2;
-  p4.x = tx - deltaT*3 + idtx*deltaT;//0.004
+  p4.x = tx - deltaT*3 + idtx*deltaT;
   p4.y = ty - deltaT*3 + idty*deltaT;
   p4.z = tz - deltaT*6 + idtz*deltaT*2;
   p4.w = rx - deltaR*12 + idrx*deltaR*6;
@@ -105,12 +105,6 @@ void createSet_kernelT(float4* Poses4, float2* Poses2, const float tx, const flo
   p4.z = fminf(tzMax, p4.z);
   p4.w = fmaxf(rxMin, p4.w);
   p4.w = fminf(rxMax, p4.w);
-  //p4.x = tx - 0.003 + idtx*0.001;
-  //p4.y = ty - 0.003 + idty*0.001;
-  //p4.z = tz - 0.006 + idtz*0.002;
-  //p4.w = rx - 0.009 + idrx*0.003;
-  //p2.x = rz0 - 0.015 + idrz0*0.005;
-  //p2.y = rz1 - 0.015 + idrz1*0.005;
   
   Poses4[Idx] = p4;
   Poses2[Idx] = p2;			
@@ -128,7 +122,7 @@ void createSetT(thrust::device_vector<float4> *Poses4, thrust::device_vector<flo
 
 //{ --- for calculate Ea --- //
 __global__
-void calEa_NP_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf, const int2 P, const float2 normDim, const int2 imgDim) {
+void calEa_NP_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf, const float2 P, const float2 normDim, const int2 imgDim) {
   const int tIdx = threadIdx.x;
   const int Idx = blockIdx.x * BLOCK_SIZE + tIdx;
 
@@ -219,7 +213,7 @@ void calEa_NP_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 S
 }
 
 __global__
-void calEa_P_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf, const int2 P, const float2 normDim, const int2 imgDim) {
+void calEa_P_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf, const float2 P, const float2 normDim, const int2 imgDim) {
   const int tIdx = threadIdx.x;
   const int Idx = blockIdx.x * BLOCK_SIZE + tIdx;
 
@@ -349,7 +343,7 @@ void calEa_P_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf
 }
   
 void calEaT(thrust::device_vector<float4> *Poses4, thrust::device_vector<float2> *Poses2, thrust::device_vector<float> *Eas, 
-    const float2 &Sf, const int2 &P, const float2 &markerDim, const int2 &iDim, const bool &photo) {
+    const float2 &Sf, const float2 &P, const float2 &markerDim, const int2 &iDim, const bool &photo) {
   const int BLOCK_NUM = 42875 / BLOCK_SIZE + 1;
   if (photo) {
     calEa_P_kernelT << < BLOCK_NUM, BLOCK_SIZE >> > (thrust::raw_pointer_cast(Poses4->data()), thrust::raw_pointer_cast(Poses2->data()), 
@@ -374,7 +368,7 @@ void blockSearch(pose *p, thrust::device_vector<float4> *Poses4, thrust::device_
   createSetT(Poses4, Poses2, p, para, deltaR, deltaT);
   
   // calEa
-  calEaT(Poses4, Poses2, Eas, make_float2(para->Sfx, para->Sfy), make_int2(para->Px, para->Py), 
+  calEaT(Poses4, Poses2, Eas, make_float2(para->Sfx, para->Sfy), make_float2(para->Px, para->Py), 
     make_float2(para->markerDimX, para->markerDimY), make_int2(para->iDimX, para->iDimY), para->photo);
   cudaDeviceSynchronize();  
 

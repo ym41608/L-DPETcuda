@@ -24,5 +24,9 @@ ver4 160504
   tracking: 0.09 s (for SAMPLENUMT 512)
 
 ver5 160510
-  make file for tx1
+  makefile for tx1
   FPS 9~10 for tx1
+  
+ver5.1 160510
+  fix Px Py to float
+  tracking: 0.015 s (for SAMPLENUMT 512) on GTX770

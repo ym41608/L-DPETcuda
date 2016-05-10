@@ -8,8 +8,8 @@
 
 #define SFX 3067.45 / 4
 #define SFY 3067.45 / 4
-#define PX 480
-#define PY 270
+#define PX 480.5
+#define PY 270.5
 
 using namespace std;
 using namespace cv;
@@ -23,10 +23,10 @@ void drawCoordinate(Mat & imgO, float *ex_mat, const float &Sfx, const float &Sf
 	 trans[1] = Sfx*ex_mat[1] + Px*ex_mat[9];
 	 trans[2] = Sfx*ex_mat[2] + Px*ex_mat[10];
 	 trans[3] = Sfx*ex_mat[3] + Px*ex_mat[11];
-	 trans[4] = (-Sfy)*ex_mat[4] + (Py-1)*ex_mat[8];
-	 trans[5] = (-Sfy)*ex_mat[5] + (Py-1)*ex_mat[9];
-	 trans[6] = (-Sfy)*ex_mat[6] + (Py-1)*ex_mat[10];
-	 trans[7] = (-Sfy)*ex_mat[7]  + (Py-1)*ex_mat[11];
+	 trans[4] = (-Sfy)*ex_mat[4] + Py*ex_mat[8];
+	 trans[5] = (-Sfy)*ex_mat[5] + Py*ex_mat[9];
+	 trans[6] = (-Sfy)*ex_mat[6] + Py*ex_mat[10];
+	 trans[7] = (-Sfy)*ex_mat[7]  + Py*ex_mat[11];
 	 trans[8] = ex_mat[8];
 	 trans[9] = ex_mat[9];
 	 trans[10] = ex_mat[10];

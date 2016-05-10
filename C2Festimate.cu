@@ -178,7 +178,7 @@ void createSet(thrust::device_vector<float4> *Poses4, thrust::device_vector<floa
 
 //{ --- for calculate Ea --- //
 __global__
-void calEa_NP_kernel(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf, const int2 P, const float2 normDim, const int2 imgDim,
+void calEa_NP_kernel(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf, const float2 P, const float2 normDim, const int2 imgDim,
 const int numPoses) {
   const int tIdx = threadIdx.x;
   const int Idx = blockIdx.x * BLOCK_SIZE + tIdx;
@@ -270,7 +270,7 @@ const int numPoses) {
 }
 
 __global__
-void calEa_P_kernel(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf, const int2 P, const float2 normDim, const int2 imgDim,
+void calEa_P_kernel(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf, const float2 P, const float2 normDim, const int2 imgDim,
 const int numPoses) {
   const int tIdx = threadIdx.x;
   const int Idx = blockIdx.x * BLOCK_SIZE + tIdx;
@@ -402,7 +402,7 @@ const int numPoses) {
 }
   
 void calEa(thrust::device_vector<float4> *Poses4, thrust::device_vector<float2> *Poses2, thrust::device_vector<float> *Eas, 
-    const float2 &Sf, const int2 &P, const float2 &markerDim, const int2 &iDim, const bool &photo, const int &numPoses) {
+    const float2 &Sf, const float2 &P, const float2 &markerDim, const int2 &iDim, const bool &photo, const int &numPoses) {
   const int BLOCK_NUM = (numPoses - 1) / BLOCK_SIZE + 1;
   if (photo) {
     calEa_P_kernel << < BLOCK_NUM, BLOCK_SIZE >> > (thrust::raw_pointer_cast(Poses4->data()), thrust::raw_pointer_cast(Poses2->data()), 
@@ -465,7 +465,7 @@ void C2Festimate(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::Ptr
       cout << "----- Evaluate Ea, with " << numPoses << " poses -----" << endl;
     Eas.resize(numPoses);
     originNumPoses = numPoses;
-    calEa(&Poses4, &Poses2, &Eas, make_float2(para->Sfx, para->Sfy), make_int2(para->Px, para->Py), 
+    calEa(&Poses4, &Poses2, &Eas, make_float2(para->Sfx, para->Sfy), make_float2(para->Px, para->Py), 
           make_float2(para->markerDimX, para->markerDimY), make_int2(para->iDimX, para->iDimY), para->photo, numPoses);
     cudaDeviceSynchronize();    
 

@@ -54,7 +54,7 @@ class parameter {
     
     // about camera
     float Sfx, Sfy;
-    int Px, Py;
+    float Px, Py;
     
     // about marker
     int mDimX, mDimY;

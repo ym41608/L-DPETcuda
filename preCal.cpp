@@ -35,7 +35,7 @@ double calSigmaValue(const gpu::GpuMat &marker_d, const parameter &para) {
 }
 
 void preCal(parameter *para, gpu::GpuMat &marker_d, gpu::GpuMat &img_d, const Mat &marker, const Mat &img, 
-            const float &Sfx, const float &Sfy, const int &Px, const int &Py, const float &minDim, const float &tzMin, const float &tzMax, 
+            const float &Sfx, const float &Sfy, const float &Px, const float &Py, const float &minDim, const float &tzMin, const float &tzMax, 
             const float &delta, const bool &photo, const bool &verbose) {
   //cudaProfilerStart(); 
   // dim of images
