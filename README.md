@@ -33,3 +33,5 @@ ver5.1 160510
 
 ver6 160510
   intensity normalization factor tracking
+  pre-time: 3 s, post-time: 7 s
+  FPS 10~11 for tx1
