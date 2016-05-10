@@ -6,8 +6,8 @@
 #include "APE.h"
 #include "DPT.h"
 
-#define SFX 3067.45 / 4
-#define SFY 3067.45 / 4
+#define SFX 3067.45 / 4.0
+#define SFY 3067.45 / 4.0
 #define PX 480.5
 #define PY 270.5
 
@@ -109,7 +109,7 @@ int main() {
   
   // initialize
   imgV.read(img);
-  APE(&p, &para, marker, img, marker_d, SFX, SFY, PX, PY, 0.25*3300/12350.0, 0.3, 1, 0.25, false, true);
+  APE(&p, &para, marker, img, marker_d, SFX, SFY, PX, PY, 0.25*3300/12350.0, 0.3, 1, 0.25, true, true);
   getExMat(ex_mat, p);
   drawCoordinate(imgO, ex_mat, SFX, SFY, PX, PY, para, img);
   imwrite("result/result.png", imgO);
@@ -126,7 +126,7 @@ int main() {
     time.Pause();
     outputVideo.write(imgO);
     totolTime += time.get_count();
-    cout << count << endl;
+    cout << count << "  " << para.sigXoversigY << ", " << para.offsetXY << endl;
     //if (count == 210)
     //  break;
   }

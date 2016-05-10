@@ -270,7 +270,7 @@ const int numPoses) {
 }
 
 __global__
-void calEa_P_kernel(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf, const float2 P, const float2 normDim, const int2 imgDim,
+void calEa_P_kernel(float4 *Poses4, float2 *Poses2, float *Eas, float2 *normFactor, const float2 Sf, const float2 P, const float2 normDim, const int2 imgDim,
 const int numPoses) {
   const int tIdx = threadIdx.x;
   const int Idx = blockIdx.x * BLOCK_SIZE + tIdx;
@@ -339,6 +339,7 @@ const int numPoses) {
 
   // calculate Ea
   float score = 0.0;
+  float invSAMPLE_NUM = 1 / float(SAMPLE_NUM);
   float invz;
   float4 YCrCb_tex, YCrCb_const;
   float u, v;
@@ -347,7 +348,6 @@ const int numPoses) {
   float sumXi = 0; float sumYi = 0;
   float sumXiSqrd = 0; float sumYiSqrd = 0;
   float Xi, Yi;
-  float invSAMPLE_NUM = 1 / float(SAMPLE_NUM);
   //float4 tmpp[SAMPLE_NUM];
   for (int i = 0; i < SAMPLE_NUM; i++) {
     // calculate coordinate on camera image
@@ -364,27 +364,21 @@ const int numPoses) {
     // accumulation for normalization
     Xi = YCrCb_const.x;
     Yi = YCrCb_tex.x;
+    //tmpp[i] = YCrCb_tex;
     sumXi += Xi;
     sumYi += Yi;
     sumXiSqrd += (Xi*Xi);
     sumYiSqrd += (Yi*Yi);
-    //tmpp[i] = YCrCb_tex;
   }
 
   // normalization parameter
-  float sigX = sqrt((sumXiSqrd - (sumXi*sumXi) * invSAMPLE_NUM) * invSAMPLE_NUM) + 0.0000001;
-  float sigY = sqrt((sumYiSqrd - (sumYi*sumYi) * invSAMPLE_NUM) * invSAMPLE_NUM) + 0.0000001;
+  float sigX = sqrt(fmaxf((sumXiSqrd - (sumXi*sumXi) * invSAMPLE_NUM), 0.0) * invSAMPLE_NUM) + 0.0000001;
+  float sigY = sqrt(fmaxf((sumYiSqrd - (sumYi*sumYi) * invSAMPLE_NUM), 0.0) * invSAMPLE_NUM) + 0.0000001;
   float meanX = sumXi * invSAMPLE_NUM;
   float meanY = sumYi * invSAMPLE_NUM;
   float sigXoversigY = sigX / sigY;
   float faster = -meanX + sigXoversigY*meanY;
 
-  //for (int i = 0; i < SAMPLE_NUM; i++) {
-  //  YCrCb_const = const_marker[i];
-  //  YCrCb_tex = make_float4(yy2[i*SAMPLE_NUM + tIdx].x, yy2[i*SAMPLE_NUM + tIdx].y, yy1[i*SAMPLE_NUM + tIdx], 0.0);
-  //  //YCrCb_tex = tmpp[i];
-  //  score += (2.852*abs(YCrCb_const.x - sigXoversigY*YCrCb_tex.x + faster) + abs(YCrCb_tex.y - YCrCb_const.y) + 1.264*abs(YCrCb_tex.z - YCrCb_const.z));
-  //}
   for (int i = 0; i < SAMPLE_NUM; i++) {
     // calculate coordinate on camera image
     invz = 1 / (t8*const_Mcoor[i].x + t9*const_Mcoor[i].y + t11);
@@ -401,12 +395,12 @@ const int numPoses) {
   Eas[Idx] = score * invSAMPLE_NUM / 5.116;
 }
   
-void calEa(thrust::device_vector<float4> *Poses4, thrust::device_vector<float2> *Poses2, thrust::device_vector<float> *Eas, 
+void calEa(thrust::device_vector<float4> *Poses4, thrust::device_vector<float2> *Poses2, thrust::device_vector<float> *Eas,  thrust::device_vector<float2> *normFactor,
     const float2 &Sf, const float2 &P, const float2 &markerDim, const int2 &iDim, const bool &photo, const int &numPoses) {
   const int BLOCK_NUM = (numPoses - 1) / BLOCK_SIZE + 1;
   if (photo) {
     calEa_P_kernel << < BLOCK_NUM, BLOCK_SIZE >> > (thrust::raw_pointer_cast(Poses4->data()), thrust::raw_pointer_cast(Poses2->data()), 
-      thrust::raw_pointer_cast(Eas->data()), Sf, P, markerDim, iDim, numPoses);
+      thrust::raw_pointer_cast(Eas->data()), thrust::raw_pointer_cast(normFactor->data()), Sf, P, markerDim, iDim, numPoses);
   }
   else {
     calEa_NP_kernel << < BLOCK_NUM, BLOCK_SIZE >> > (thrust::raw_pointer_cast(Poses4->data()), thrust::raw_pointer_cast(Poses2->data()), 
@@ -448,6 +442,7 @@ void C2Festimate(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::Ptr
   createSet(&Poses4, &Poses2, *para);
   int numPoses = Poses4.size();
   thrust::device_vector<float> Eas(numPoses);
+  thrust::device_vector<float2> normFactor(numPoses);
   
   // start
   const float factor = 1/1.511;
@@ -464,8 +459,9 @@ void C2Festimate(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::Ptr
     if (verbose)
       cout << "----- Evaluate Ea, with " << numPoses << " poses -----" << endl;
     Eas.resize(numPoses);
+    normFactor.resize(numPoses);
     originNumPoses = numPoses;
-    calEa(&Poses4, &Poses2, &Eas, make_float2(para->Sfx, para->Sfy), make_float2(para->Px, para->Py), 
+    calEa(&Poses4, &Poses2, &Eas, &normFactor, make_float2(para->Sfx, para->Sfy), make_float2(para->Px, para->Py), 
           make_float2(para->markerDimX, para->markerDimY), make_int2(para->iDimX, para->iDimY), para->photo, numPoses);
     cudaDeviceSynchronize();    
 
@@ -479,6 +475,8 @@ void C2Festimate(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::Ptr
     // terminate
     if ( (bestEa < 0.005) || ((level > 4) && (bestEa < 0.015)) || ((level > 3) && (bestEa > mean(bestDists))) || (level > 7) ) {
       const int idx = iter - Eas.begin();
+      
+      // assign the pose
       float4 p4 = Poses4[idx];
       float2 p2 = Poses2[idx];
       p->tx = p4.x;
@@ -487,6 +485,14 @@ void C2Festimate(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::Ptr
       p->rx = p4.w;
       p->rz0 = p2.x;
       p->rz1 = p2.y;
+      
+      // assign the normalize factor
+      if (para->photo) {
+        float2 f2 = normFactor[idx];
+        para->sigXoversigY = f2.x;
+        para->offsetXY = f2.y;
+      }
+      
       // unbind the texture
       cudaUnbindTexture (&tex_imgYCrCb);
       break;

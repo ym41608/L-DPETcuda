@@ -30,3 +30,6 @@ ver5 160510
 ver5.1 160510
   fix Px Py to float
   tracking: 0.015 s (for SAMPLENUMT 512) on GTX770
+
+ver6 160510
+  intensity normalization factor tracking

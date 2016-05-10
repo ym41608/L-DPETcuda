@@ -69,6 +69,10 @@ class parameter {
     
     // about tracking
     pose Prev, V0, V1, A;
+    
+    // about intensity normalization
+    float sigXoversigY;
+    float offsetXY;
 };
 
 #endif

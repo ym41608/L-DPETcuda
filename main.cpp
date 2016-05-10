@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
     char s[300];
     float FPS = 1000000 / float(time.get_count());
     sprintf(s, "Frame rate = %f", FPS);
-    putText(img, s, Point(75, 75), FONT_HERSHEY_COMPLEX, 1, Scalar(255,0,0));
+    putText(img, s, Point(75, 75), FONT_HERSHEY_COMPLEX, 1, Scalar(255,255,0));
     if (frameNum == 2)
       imwrite("tmp.png", img);    
 

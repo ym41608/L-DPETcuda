@@ -213,7 +213,7 @@ void calEa_NP_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 S
 }
 
 __global__
-void calEa_P_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf, const float2 P, const float2 normDim, const int2 imgDim) {
+void calEa_P_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, float2 *normFactor, const float2 Sf, const float2 P, const float2 normDim, const int2 imgDim, const float2 nf) {
   const int tIdx = threadIdx.x;
   const int Idx = blockIdx.x * BLOCK_SIZE + tIdx;
 
@@ -289,7 +289,7 @@ void calEa_P_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf
   float sumXi = 0; float sumYi = 0;
   float sumXiSqrd = 0; float sumYiSqrd = 0;
   float Xi, Yi;
-  //float4 tmpp[SAMPLE_NUMT];
+  float2 nfreg = nf;
   float invSAMPLE_NUMT = 1 / float(SAMPLE_NUMT);
   for (int i = 0; i < SAMPLE_NUMT; i++) {
     // calculate coordinate on camera image
@@ -310,44 +310,27 @@ void calEa_P_kernelT(float4 *Poses4, float2 *Poses2, float *Eas, const float2 Sf
     sumYi += Yi;
     sumXiSqrd += (Xi*Xi);
     sumYiSqrd += (Yi*Yi);
-    //tmpp[i] = YCrCb_tex;
+    
+    score += (2.852*abs(YCrCb_const.x - nfreg.x*YCrCb_tex.x + nfreg.y) + abs(YCrCb_tex.y - YCrCb_const.y) + 1.264*abs(YCrCb_tex.z - YCrCb_const.z));
   }
-
+  Eas[Idx] = score * invSAMPLE_NUMT / 5.116;
+  
   // normalization parameter
-  float sigX = sqrt((sumXiSqrd - (sumXi*sumXi) * invSAMPLE_NUMT) * invSAMPLE_NUMT) + 0.0000001;
-  float sigY = sqrt((sumYiSqrd - (sumYi*sumYi) * invSAMPLE_NUMT) * invSAMPLE_NUMT) + 0.0000001;
+  float sigX = sqrt(fmaxf((sumXiSqrd - (sumXi*sumXi) * invSAMPLE_NUMT), 0.0) * invSAMPLE_NUMT) + 0.0000001;
+  float sigY = sqrt(fmaxf((sumYiSqrd - (sumYi*sumYi) * invSAMPLE_NUMT), 0.0) * invSAMPLE_NUMT) + 0.0000001;
   float meanX = sumXi * invSAMPLE_NUMT;
   float meanY = sumYi * invSAMPLE_NUMT;
   float sigXoversigY = sigX / sigY;
   float faster = -meanX + sigXoversigY*meanY;
-
-  //for (int i = 0; i < SAMPLE_NUMT; i++) {
-  //  YCrCb_const = const_marker[i];
-  //  YCrCb_tex = tmpp[i];
-  //  score += (2.852*abs(YCrCb_const.x - sigXoversigY*YCrCb_tex.x + faster) + abs(YCrCb_tex.y - YCrCb_const.y) + 1.264*abs(YCrCb_tex.z - YCrCb_const.z));
-  //}
-  for (int i = 0; i < SAMPLE_NUMT; i++) {
-    // calculate coordinate on camera image
-    invz = 1 / (t8*const_Mcoor[i].x + t9*const_Mcoor[i].y + t11);
-    u = (t0*const_Mcoor[i].x + t1*const_Mcoor[i].y + t3) * invz;
-    v = (t4*const_Mcoor[i].x + t5*const_Mcoor[i].y + t7) * invz;
-
-    // get value from constmem
-    YCrCb_const = const_marker[i];
-
-    // get value from texture
-    YCrCb_tex = tex2D(tex_imgYCrCb, u, v);
-    score += (2.852*abs(YCrCb_const.x - sigXoversigY*YCrCb_tex.x + faster) + abs(YCrCb_tex.y - YCrCb_const.y) + 1.264*abs(YCrCb_tex.z - YCrCb_const.z));
-  }
-  Eas[Idx] = score * invSAMPLE_NUMT / 5.116;
+  normFactor[Idx] = make_float2(sigXoversigY, faster);
 }
   
-void calEaT(thrust::device_vector<float4> *Poses4, thrust::device_vector<float2> *Poses2, thrust::device_vector<float> *Eas, 
-    const float2 &Sf, const float2 &P, const float2 &markerDim, const int2 &iDim, const bool &photo) {
+void calEaT(thrust::device_vector<float4> *Poses4, thrust::device_vector<float2> *Poses2, thrust::device_vector<float> *Eas, thrust::device_vector<float2> *normFactor, 
+    const float2 &Sf, const float2 &P, const float2 &markerDim, const int2 &iDim, const float2 &nf, const bool &photo) {
   const int BLOCK_NUM = 42875 / BLOCK_SIZE + 1;
   if (photo) {
     calEa_P_kernelT << < BLOCK_NUM, BLOCK_SIZE >> > (thrust::raw_pointer_cast(Poses4->data()), thrust::raw_pointer_cast(Poses2->data()), 
-      thrust::raw_pointer_cast(Eas->data()), Sf, P, markerDim, iDim);
+      thrust::raw_pointer_cast(Eas->data()), thrust::raw_pointer_cast(normFactor->data()), Sf, P, markerDim, iDim, nf);
   }
   else {
     calEa_NP_kernelT << < BLOCK_NUM, BLOCK_SIZE >> > (thrust::raw_pointer_cast(Poses4->data()), thrust::raw_pointer_cast(Poses2->data()), 
@@ -357,7 +340,7 @@ void calEaT(thrust::device_vector<float4> *Poses4, thrust::device_vector<float2>
 //}
 
 //{ --- for Track --- //
-void blockSearch(pose *p, thrust::device_vector<float4> *Poses4, thrust::device_vector<float2> *Poses2, thrust::device_vector<float> *Eas, 
+void blockSearch(pose *p, thrust::device_vector<float4> *Poses4, thrust::device_vector<float2> *Poses2, thrust::device_vector<float> *Eas, thrust::device_vector<float2> *normFactor, 
   thrust::device_vector<float2> *mCoor, thrust::device_vector<float4> *mValue, const gpu::PtrStepSz<float3> &marker_d, 
   parameter *para, const float& deltaR, const float &deltaT, const bool &verbose) {
   
@@ -368,8 +351,8 @@ void blockSearch(pose *p, thrust::device_vector<float4> *Poses4, thrust::device_
   createSetT(Poses4, Poses2, p, para, deltaR, deltaT);
   
   // calEa
-  calEaT(Poses4, Poses2, Eas, make_float2(para->Sfx, para->Sfy), make_float2(para->Px, para->Py), 
-    make_float2(para->markerDimX, para->markerDimY), make_int2(para->iDimX, para->iDimY), para->photo);
+  calEaT(Poses4, Poses2, Eas, normFactor, make_float2(para->Sfx, para->Sfy), make_float2(para->Px, para->Py), 
+    make_float2(para->markerDimX, para->markerDimY), make_int2(para->iDimX, para->iDimY), make_float2(para->sigXoversigY, para->offsetXY), para->photo);
   cudaDeviceSynchronize();  
 
   // findMin
@@ -388,6 +371,13 @@ void blockSearch(pose *p, thrust::device_vector<float4> *Poses4, thrust::device_
   p->rx = p4.w;
   p->rz0 = p2.x;
   p->rz1 = p2.y; 
+  
+  // update normalize factor
+  if (para->photo) {
+    float2 f2 = (*normFactor)[idx];
+    para->sigXoversigY = f2.x;
+    para->offsetXY = f2.y;
+  }
  }
 
 void track(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::PtrStepSz<float4> &img_d, parameter *para, const bool &verbose) {
@@ -408,21 +398,22 @@ void track(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::PtrStepSz
   thrust::device_vector<float4> Poses4(42875);
   thrust::device_vector<float2> Poses2(42875);
   thrust::device_vector<float> Eas(42875);
+  thrust::device_vector<float2> normFactor(42875);
   
   // 1 round
   float deltaR = 0.004;
   float deltaT = 0.004;
-  blockSearch(p, &Poses4, &Poses2, &Eas, &mCoor, &mValue, marker_d, para, deltaR, deltaT, verbose);
+  blockSearch(p, &Poses4, &Poses2, &Eas, &normFactor, &mCoor, &mValue, marker_d, para, deltaR, deltaT, verbose);
   
   // 2 round
   deltaR /= 2.0;
   deltaT /= 3.0;
-  blockSearch(p, &Poses4, &Poses2, &Eas, &mCoor, &mValue, marker_d, para, deltaR, deltaT, verbose);
+  blockSearch(p, &Poses4, &Poses2, &Eas, &normFactor, &mCoor, &mValue, marker_d, para, deltaR, deltaT, verbose);
 
   // 3 round
   deltaR /= 2.0;
   deltaT /= 3.0;
-  blockSearch(p, &Poses4, &Poses2, &Eas, &mCoor, &mValue, marker_d, para, deltaR, deltaT, verbose);
+  blockSearch(p, &Poses4, &Poses2, &Eas, &normFactor, &mCoor, &mValue, marker_d, para, deltaR, deltaT, verbose);
   
   // unbind the texture
   cudaUnbindTexture (&tex_imgYCrCb);

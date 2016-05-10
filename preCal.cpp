@@ -106,4 +106,7 @@ void preCal(parameter *para, gpu::GpuMat &marker_d, gpu::GpuMat &img_d, const Ma
   // photo
   para->photo = photo;
   
+  //
+  para->sigXoversigY = 1;
+  para->offsetXY = 0;
 }
