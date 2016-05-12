@@ -127,7 +127,7 @@ int main() {
     outputVideo.write(imgO);
     totolTime += time.get_count();
     cout << count << "  " << para.sigXoversigY << ", " << para.offsetXY << endl;
-    //if (count == 210)
+    //if (count == 10)
     //  break;
   }
   float avgTime = totolTime / float(count);
