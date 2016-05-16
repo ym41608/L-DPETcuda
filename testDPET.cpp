@@ -6,10 +6,10 @@
 #include "APE.h"
 #include "DPT.h"
 
-#define SFX 3067.45 / 4.0
-#define SFY 3067.45 / 4.0
-#define PX 480.5
-#define PY 270.5
+#define SFX 800
+#define SFY 800
+#define PX 320.5
+#define PY 240.5
 
 using namespace std;
 using namespace cv;
@@ -78,12 +78,12 @@ void getExMat(float *ex_mat, const pose &P) {
 }
 
 int main() {
-  Mat marker = cv::imread("img/be.png");
+  Mat marker = cv::imread("img/pa.png");
   if(!marker.data ) {
     cout <<  "Could not open marker" << endl ;
     return -1;
   }
-  VideoCapture imgV("video/be_fm.avi");
+  VideoCapture imgV("video/fi-pa-uc.avi");
   if (!imgV.isOpened()) {
     cout <<  "Could not open video" << endl ;
     return -1;
@@ -109,7 +109,7 @@ int main() {
   
   // initialize
   imgV.read(img);
-  APE(&p, &para, marker, img, marker_d, SFX, SFY, PX, PY, 0.25*3300/12350.0, 0.3, 1, 0.25, true, true);
+  APE(&p, &para, marker, img, marker_d, SFX, SFY, PX, PY, 0.5, 3, 7, 0.20, false, true);
   getExMat(ex_mat, p);
   drawCoordinate(imgO, ex_mat, SFX, SFY, PX, PY, para, img);
   imwrite("result/result.png", imgO);
