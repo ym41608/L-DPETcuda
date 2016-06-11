@@ -36,3 +36,6 @@ ver6 160510
   pre-time: 4 s, post-time: 7 s
   FPS 10~11 for tx1
   change BLOCK_SIZE to 256. (highest occupancy rate)
+
+ver6.1 160611
+  draw box
