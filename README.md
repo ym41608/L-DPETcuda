@@ -39,3 +39,6 @@ ver6 160510
 
 ver6.1 160611
   draw box
+  
+ver6.2 160112
+  change cout

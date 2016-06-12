@@ -453,11 +453,11 @@ void C2Festimate(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::Ptr
   while (true) {
     level++;
     if (verbose)
-      cout << endl << "***" << endl << "*** level " << level << endl << "***" << endl;
+      cout << "- level " << level << " - delta " << para->delta << ", ";
     
     // calEa
     if (verbose)
-      cout << "----- Evaluate Ea, with " << numPoses << " poses -----" << endl;
+      cout << "Number of Poses " << numPoses << ", ";
     Eas.resize(numPoses);
     normFactor.resize(numPoses);
     originNumPoses = numPoses;
@@ -469,7 +469,7 @@ void C2Festimate(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::Ptr
     thrust::device_vector<float>::iterator iter = thrust::min_element(Eas.begin(), Eas.end());
     float bestEa = *iter;
     if (verbose)
-      std::cout << "$$$ bestEa = " << bestEa << endl;
+      cout << "Best Ea " << bestEa << endl;
     bestDists.push_back(bestEa);
     
     // terminate
@@ -503,8 +503,6 @@ void C2Festimate(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::Ptr
     
     // restart?
     if ((level==1) && ((tooHighPercentage && (bestEa > c.x) && (originNumPoses < 7500000)) || ((bestEa > c.y) && (originNumPoses < 5000000)) ) ) {
-      if (verbose)
-        cout << "##### Restarting!!! change delta from " << para->delta << " to " << para->delta*0.9 << endl;
       para->shrinkNet(0.9);
       createSet(&Poses4, &Poses2, *para);
       numPoses = Poses4.size();
@@ -514,8 +512,6 @@ void C2Festimate(pose *p, const gpu::PtrStepSz<float3> &marker_d, const gpu::Ptr
     else {
       // expandPoses
       expandPoses(&Poses4, &Poses2, factor, para, &numPoses);
-      if (verbose)
-        cout << "##### Continuing!!! prevDelta = " << para->delta << ", newDelta = " << para->delta*factor << endl;
     }
     
     // re-sample
