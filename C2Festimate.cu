@@ -196,7 +196,7 @@ const int numPoses) {
   tx = Poses4[Idx].x;
   ty = Poses4[Idx].y;
   tz = Poses4[Idx].z;
-  rx = Poses4[Idx].w;
+  rx = Poses4[Idx].w + 3.1415926;
   rz0 = Poses2[Idx].x;
   rz1 = Poses2[Idx].y;
 
@@ -216,9 +216,9 @@ const int numPoses) {
   t0 = Sf.x*r11 + P.x*r31;
   t1 = Sf.x*r12 + P.x*r32;
   t3 = Sf.x*tx + P.x*tz;
-  t4 = (-Sf.y)*r21 + P.y*r31;
-  t5 = (-Sf.y)*r22 + P.y*r32;
-  t7 = (-Sf.y)*ty + P.y*tz;
+  t4 = Sf.y*r21 + P.y*r31;
+  t5 = Sf.y*r22 + P.y*r32;
+  t7 = Sf.y*ty + P.y*tz;
   t8 = r31;
   t9 = r32;
   t11 = tz;
@@ -288,7 +288,7 @@ const int numPoses) {
   tx = Poses4[Idx].x;
   ty = Poses4[Idx].y;
   tz = Poses4[Idx].z;
-  rx = Poses4[Idx].w;
+  rx = Poses4[Idx].w + 3.1415926;
   rz0 = Poses2[Idx].x;
   rz1 = Poses2[Idx].y;
 
@@ -308,9 +308,9 @@ const int numPoses) {
   t0 = Sf.x*r11 + P.x*r31;
   t1 = Sf.x*r12 + P.x*r32;
   t3 = Sf.x*tx + P.x*tz;
-  t4 = (-Sf.y)*r21 + P.y*r31;
-  t5 = (-Sf.y)*r22 + P.y*r32;
-  t7 = (-Sf.y)*ty + P.y*tz;
+  t4 = Sf.y*r21 + P.y*r31;
+  t5 = Sf.y*r22 + P.y*r32;
+  t7 = Sf.y*ty + P.y*tz;
   t8 = r31;
   t9 = r32;
   t11 = tz;

@@ -24,10 +24,10 @@ void drawCoordinate(Mat &img, float *ex_mat, float Sfx, float Sfy, float Px, flo
 	trans[1] = Sfx*ex_mat[1] + Px*ex_mat[9];
 	trans[2] = Sfx*ex_mat[2] + Px*ex_mat[10];
 	trans[3] = Sfx*ex_mat[3] + Px*ex_mat[11];
-	trans[4] = (-Sfy)*ex_mat[4] + Py*ex_mat[8];
-	trans[5] = (-Sfy)*ex_mat[5] + Py*ex_mat[9];
-	trans[6] = (-Sfy)*ex_mat[6] + Py*ex_mat[10];
-	trans[7] = (-Sfy)*ex_mat[7]  + Py*ex_mat[11];
+	trans[4] = Sfy*ex_mat[4] + Py*ex_mat[8];
+	trans[5] = Sfy*ex_mat[5] + Py*ex_mat[9];
+	trans[6] = Sfy*ex_mat[6] + Py*ex_mat[10];
+	trans[7] = Sfy*ex_mat[7]  + Py*ex_mat[11];
 	trans[8] = ex_mat[8];
 	trans[9] = ex_mat[9];
 	trans[10] = ex_mat[10];
@@ -86,20 +86,20 @@ void drawCoordinate(Mat &img, float *ex_mat, float Sfx, float Sfy, float Px, flo
 }
 
 void getExMat(float *ex_mat, const pose &P) {
-  float rx = P.rx;
+  float rx = P.rx + 3.1415926;
   float rz0 = P.rz0;
   float rz1 = P.rz1;
   ex_mat[0] =  cos(rz0)*cos(rz1) - sin(rz0)*cos(rx)*sin(rz1); //0
 	ex_mat[1] = -cos(rz0)*sin(rz1) - sin(rz0)*cos(rx)*cos(rz1); //1
-	ex_mat[2] = -(sin(rz0)*sin(rx)); //2
+	ex_mat[2] = (sin(rz0)*sin(rx)); //2
   ex_mat[3] = P.tx;
 	ex_mat[4] =  sin(rz0)*cos(rz1) + cos(rz0)*cos(rx)*sin(rz1); //4
 	ex_mat[5] = -sin(rz0)*sin(rz1) + cos(rz0)*cos(rx)*cos(rz1); //5
-	ex_mat[6] = -(-cos(rz0)*sin(rx)); //6
+	ex_mat[6] = (-cos(rz0)*sin(rx)); //6
   ex_mat[7] = P.ty;
 	ex_mat[8] =  sin(rx)*sin(rz1); //8
 	ex_mat[9] =  sin(rx)*cos(rz1); //9
-	ex_mat[10] = -(cos(rx)); //10
+	ex_mat[10] = (cos(rx)); //10
   ex_mat[11] = P.tz;
 }
 
