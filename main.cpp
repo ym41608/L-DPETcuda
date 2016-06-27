@@ -195,7 +195,6 @@ int main(int argc, char *argv[]) {
         break;
     }  
   }
-  cout << "eunji get num. 1" << endl;
   delete[] ex_mat;
   return 0;
 }
